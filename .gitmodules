@@ -1,0 +1,3 @@
+[submodule "htdocs/atk4"]
+	path = htdocs/atk4
+	url = git@github.com:AppsFuel/atk4.git
