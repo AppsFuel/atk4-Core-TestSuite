@@ -6,8 +6,9 @@ class Controller_Data_Foo extends Controller_Data {
     public $next = 0;
 
     function save($model, $id) {
-        return 1;
+        return $id || 1;
     }
+
     function delete($model,$id) {
         if (!$model->loaded()) {
             throw $this->exception('Model isn\'t loaded in Controller_Data');
@@ -20,6 +21,7 @@ class Controller_Data_Foo extends Controller_Data {
         }
         if ($this->foundOnLoad) {
             $model->id = $id;
+            $model->data = $model->_table[$this->short_name][1];
         } else {
             $model->id = null;
         }
@@ -31,6 +33,7 @@ class Controller_Data_Foo extends Controller_Data {
         }
         if ($this->foundOnLoad) {
             $model->id = 1;
+            $model->data = $model->_table[$this->short_name][1];
         } else {
             $model->id = null;
         }
@@ -42,6 +45,7 @@ class Controller_Data_Foo extends Controller_Data {
         }
         if ($this->foundOnLoad) {
             $model->id = 1;
+            $model->data = $model->_table[$this->short_name][1];
         } else {
             $model->id = null;
         }
@@ -63,5 +67,4 @@ class Controller_Data_Foo extends Controller_Data {
     }
 
     function deleteAll($model) {}
-    function getBy($model,$field,$cond,$value) {}
 }

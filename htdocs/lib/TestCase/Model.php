@@ -57,7 +57,7 @@ class TestCase_Model extends TestCase {
         $model = $this->add('TestModel', array('strict_fields' => true));
 
         $e = $this->assertThrowException('Exception_Logic', $model, 'set', array('inexistentField', 'value'));
-        $this->assertEquals('inexistentField', $e->more_info['name']);
+        $this->assertEquals('inexistentField', $e->more_info['field']);
     }
 
     function testSetToSameValue() {
@@ -67,6 +67,14 @@ class TestCase_Model extends TestCase {
         $model->set('field1', 'value1');
 
         $this->assertFalse($model->isDirty('field1'), 'Model field is dirty');
+    }
+
+    function testSetNullFieldStrict() {
+        $model = $this->add('TestModel', array('strict_fields' => true));
+        $model->set(array('field1' => null, 'field2' => 2, 'field3' => 3));
+
+        $this->assertTrue(array_key_exists('field1', $model->data), 'Model not set');
+        $this->assertEquals(null, $model->data['field1']);
     }
 
     function testGet() {
@@ -90,6 +98,13 @@ class TestCase_Model extends TestCase {
         $this->assertEquals('inexistentField', $e->more_info['field']);
     }
 
+    function testGetNullFieldStrict() {
+        $model = $this->add('TestModel', array('strict_fields' => true));
+        $model->set(array('field1' => null, 'field2' => 2, 'field3' => 3));
+
+        $this->assertEquals(null, $model->get('field1'));
+    }
+
     function testGetActualFields() {
         $model = $this->add('TestModel');
 
@@ -111,8 +126,9 @@ class TestCase_Model extends TestCase {
 
     function testGroupActualFields() {
         $model = $this->add('TestModel');
+        $model->setActualFields('group1');
 
-        $actualFields = $model->getActualFields('group1');
+        $actualFields = $model->getActualFields();
 
         $expected = array('field1', 'field2');
         $this->assertEquals($expected, $actualFields);
@@ -121,10 +137,22 @@ class TestCase_Model extends TestCase {
     function testCommaSeparatedGroupActualFields() {
         $model = $this->add('TestModel');
         $model->addField('field4')->group('group3');
+        $model->setActualFields('group1,group3');
 
-        $actualFields = $model->getActualFields('group1,group3');
+        $actualFields = $model->getActualFields();
 
         $expected = array('field1', 'field2', 'field4');
+        $this->assertEquals($expected, $actualFields);
+    }
+
+    function testExpludeGroupActualFields() {
+        $model = $this->add('TestModel');
+        $model->addField('field4')->group('group3');
+        $model->setActualFields('all,-group3');
+
+        $actualFields = $model->getActualFields();
+
+        $expected = array('field1', 'field2', 'field3');
         $this->assertEquals($expected, $actualFields);
     }
 
@@ -191,6 +219,29 @@ class TestCase_Model extends TestCase {
 
         $this->assertTrue($model->loaded(), 'Model must be loaded');
         $this->assertEquals('value1.1', $model->id);
+    }
+
+    function testLoadDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->load('value1.2');
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testLoadFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $model->tryLoad('value1.2');
+
+        $this->assertThrowException('BaseException', $model, 'load', array('inexistentValue'));
+        $this->assertTrue($model->isDirty('field1'), 'Load don\'t erase dirty array');
     }
 
     function testTryLoad() {
@@ -260,6 +311,29 @@ class TestCase_Model extends TestCase {
         $this->assertEquals(1, $tmp);
     }
 
+    function testTryLoadDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->tryLoad('value1.2');
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testTryLoadFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $model->tryLoad('value1.2');
+
+        $this->assertEquals('value11.11', $model->get('field1'));
+        $this->assertTrue($model->isDirty('field1'), 'Load erase dirty array');
+    }
+
     function testLoadAny() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
@@ -303,23 +377,70 @@ class TestCase_Model extends TestCase {
     function testLoadAnyHooks() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
-        $tmp = 0;
-        $model->addHook('beforeLoad,afterLoad', function() use (&$tmp) { $tmp += 1; });
+        $tmp = array();
+        $self = $this;
+        $model->addHook('beforeLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals('loadAny', $args[1]);
+                $self->assertEquals(array(), $args[2]);
+                $tmp[] = 'beforeLoad';
+        });
+        $model->addHook('afterLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals(1, count($args));
+                $tmp[] = 'afterLoad';
+        });
 
         $model->loadAny();
 
-        $this->assertEquals(2, $tmp);
+        $this->assertEquals(array('beforeLoad', 'afterLoad'), $tmp);
     }
 
     function testLoadAnyHooksFail() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', array());
         $model->controller->foundOnLoad = false;
-        $tmp = 0;
-        $model->addHook('beforeLoad,afterLoad', function() use (&$tmp) { $tmp += 1; });
+        $tmp = array();
+        $self = $this;
+        $model->addHook('beforeLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals('loadAny', $args[1]);
+                $self->assertEquals(array(), $args[2]);
+                $tmp[] = 'beforeLoad';
+        });
+        $model->addHook('afterLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals(1, count($args));
+                $tmp[] = 'afterLoad';
+        });
 
         $this->assertThrowException('BaseException', $model, 'loadAny');
-        $this->assertEquals(1, $tmp);
+        $this->assertEquals(array('beforeLoad'), $tmp);
+    }
+
+    function testLoadAnyDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->loadAny();
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testLoadAnyFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $this->assertThrowException('BaseException', $model, 'loadAny');
+        $this->assertTrue($model->isDirty('field1'), 'Load erase dirty array');
     }
 
     function testTryLoadAny() {
@@ -387,6 +508,29 @@ class TestCase_Model extends TestCase {
         $this->assertEquals(1, $tmp);
     }
 
+
+    function testTryLoadAnyDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->tryLoadAny();
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testTryLoadAnyFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $model->tryLoadAny();
+
+        $this->assertTrue($model->isDirty('field1'), 'Load erase dirty array');
+    }
+
     function testLoadBy() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
@@ -448,6 +592,27 @@ class TestCase_Model extends TestCase {
 
         $this->assertThrowException('BaseException', $model, 'loadBy', array('field1', '=', 'inexisten'));
         $this->assertEquals(1, $tmp);
+    }
+
+    function testLoadByDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->loadBy('field2', '=', 'value2.1');
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testLoadByFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $this->assertThrowException('BaseException', $model, 'loadBy', array('field1', '=', 'inexisten'));
+        $this->assertTrue($model->isDirty('field1'), 'Load erase dirty array');
     }
 
     function testTryLoadBy() {
@@ -517,6 +682,29 @@ class TestCase_Model extends TestCase {
         $this->assertEquals(1, $tmp);
     }
 
+    function testTryLoadByDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+
+        $model->tryLoadBy('field2', '=', 'value2.1');
+
+        $this->assertEquals('value1.2', $model->get('field1'));
+        $this->assertFalse($model->isDirty('field1'), 'Load don\'t erase dirty array');
+    }
+
+    function testTryLoadByFailDirty() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $model->set('field1', 'value11.11');
+        $model->controller->foundOnLoad = false;
+
+        $model->tryLoadBy('field2', '=', 'value2.1');
+
+        $this->assertTrue($model->isDirty('field1'), 'Load erase dirty array');
+    }
+
+
     function testUnload() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData, 'value1.1');
@@ -574,7 +762,7 @@ class TestCase_Model extends TestCase {
         );
         $model->set($fields)->save('newValue1');
 
-        $this->assertEquals($fields, $model->get());
+        $this->assertEquals($fields['field2'], $model->get('field2'));
         $this->assertTrue($model->loaded(), 'Model must be loaded');
         $this->assertEmpty($model->dirty);
     }
@@ -693,25 +881,6 @@ class TestCase_Model extends TestCase {
 
     }
 
-
-
-/*
-    function testSaveAndUnload() { }
-    function testDelete() { }
-    function testDeleteAll() { }
-    function testAddCondition() { }
-
-    function testReload() { }
-    function testSetLimit() { }
-    function testSetOrder() { }
-    function testCount() { }
-    function testForeach() { }
-    function testGetRows() { }
-    function testEach() { }
-    function testHasOne() { }
-    function testHasMany() { }
-    function testRef() { }
-*/
 
     // TODO: metodi serilize????
 

@@ -1,7 +1,6 @@
 <?php
 
 
-$config = array();
 $config['atk']['base_path']='/atk4/';
 
 $config['dsn']=array(
