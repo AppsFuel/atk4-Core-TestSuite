@@ -659,6 +659,16 @@ class TestCase_Model extends TestCase {
         $this->assertFalse($model->loaded(), 'Model must be not loaded');
     }
 
+    function testTryLoadByArgument() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $model->tryLoadBy('field2', 'value2.2');
+
+        $this->assertTrue($model->loaded(), 'Model must be loaded');
+        $this->assertEquals('value2.2', $model->get('field2'));
+    }
+
     function testTryLoadByHooks() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
