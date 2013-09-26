@@ -4,6 +4,7 @@ class Controller_Data_Foo extends Controller_Data {
     public $foundOnLoad = true;
     public $rewind = 0;
     public $next = 0;
+    public $supportConditions = true;
 
     function save($model, $id) {
         return $id || 1;

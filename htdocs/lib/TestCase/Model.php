@@ -878,21 +878,47 @@ class TestCase_Model extends TestCase {
         $model->setSource('Foo', self::$exampleData);
 
         foreach($model as $n => $row) {
+            $this->assertTrue($model->loaded(), 'Model must be loaded');
+            $this->assertEquals($row, $model->data);
             $this->assertEquals(self::$exampleData[$n], $row);
         }
         $this->assertEquals(3, $model->controller->next);
         $this->assertEquals(1, $model->controller->rewind);
     }
 
-    function testGetRows() {
+    function testAddCondition() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
 
+        $model->addCondition('field1', 'value1.1');
 
+        $this->assertTrue(isset($model->conditions['field1']), 'Model doesn\'t store condition');
+        $this->assertEquals(1, count($model->conditions['field1']));
+        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions['field1'][0]);
     }
 
+    function testAddConditionArray() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
 
-    // TODO: metodi serilize????
+        $model->addCondition(array(
+            array('field1', 'value1.1'),
+            array('field1', '>', 'value2.1')));
+
+        $this->assertTrue(isset($model->conditions['field1']), 'Model doesn\'t store condition');
+        $this->assertEquals(2, count($model->conditions['field1']));
+        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions['field1'][0]);
+        $this->assertEquals(array('field1', '>', 'value2.1'), $model->conditions['field1'][1]);
+    }
+
+    function testAddConditionOnlyKey() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $this->assertThrowException('BaseException', $model, 'addCondition', array('field1'));
+
+        $this->assertEquals(0, count($model->conditions));
+    }
 
     static private $exampleData = array(
         array('field1' => 'value1.1', 'field2' => 'value2.1', 'field3' => 'value3.1'),
