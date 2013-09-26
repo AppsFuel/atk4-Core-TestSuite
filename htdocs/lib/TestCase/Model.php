@@ -886,6 +886,28 @@ class TestCase_Model extends TestCase {
         $this->assertEquals(1, $model->controller->rewind);
     }
 
+    function testIterableHook() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+        $tmp = array();
+        $self = $this;
+        $model->addHook('beforeLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals('iterating', $args[1]);
+                $self->assertEquals(null, $args[2]);
+                $tmp[] = 'beforeLoad';
+        });
+        $model->addHook('afterLoad',
+            function() use (&$tmp, $self) {
+                $args = func_get_args();
+                $self->assertEquals(1, count($args));
+                $tmp[] = 'afterLoad';
+        });
+
+        foreach($model as $n => $row) { }
+    }
+
     function testAddCondition() {
         $model = $this->add('TestModel');
         $model->setSource('Foo', self::$exampleData);
@@ -918,6 +940,38 @@ class TestCase_Model extends TestCase {
         $this->assertThrowException('BaseException', $model, 'addCondition', array('field1'));
 
         $this->assertEquals(0, count($model->conditions));
+    }
+
+    function testSetLimit() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $model->setLimit(3, 45);
+
+        $this->assertEquals(array(3, 45), $model->limit);
+    }
+
+    function testDefaultLimit() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $this->assertEquals(array(null, null), $model->limit);
+    }
+
+    function testSetOrder() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $model->setOrder('field1', 'desc');
+
+        $this->assertEquals(array('field1', 'desc'), $model->order);
+    }
+
+    function testDefaultOrder() {
+        $model = $this->add('TestModel');
+        $model->setSource('Foo', self::$exampleData);
+
+        $this->assertEquals(array(null, null), $model->order);
     }
 
     static private $exampleData = array(

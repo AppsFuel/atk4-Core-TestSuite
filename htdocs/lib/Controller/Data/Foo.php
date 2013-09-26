@@ -5,6 +5,8 @@ class Controller_Data_Foo extends Controller_Data {
     public $rewind = 0;
     public $next = 0;
     public $supportConditions = true;
+    public $supportLimit = true;
+    public $supportOrder = true;
 
     function save($model, $id) {
         return $id || 1;
@@ -56,13 +58,13 @@ class Controller_Data_Foo extends Controller_Data {
         return count($model->_table[$this->short_name]);
     }
 
-    function rewind($model) {
+    function prefetchAll($model) {
         $this->rewind += 1;
         reset($model->_table[$this->short_name]);
         list($model->id,$model->data) = each($model->_table[$this->short_name]);
     }
 
-    function next($model) {
+    function loadCurrent($model) {
         $this->next +=1;
         list($model->id,$model->data) = each($model->_table[$this->short_name]);
     }
