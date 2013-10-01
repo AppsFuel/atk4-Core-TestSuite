@@ -12,19 +12,26 @@ class Controller_Data_Foo extends Controller_Data {
         return $id || 1;
     }
 
-    function delete($model,$id) {
+    function delete($model, $id) {
         if (!$model->loaded()) {
             throw $this->exception('Model isn\'t loaded in Controller_Data');
         }
     }
 
-    function tryLoad($model,$id) {
+    function tryLoad($model, $id) {
         if ($model->loaded()) {
             throw $this->exception('Model is loaded in Controller_Data');
         }
         if ($this->foundOnLoad) {
             $model->id = $id;
-            $model->data = $model->_table[$this->short_name][1];
+            foreach ($model->_table[$this->short_name] as $n => $row) {
+                if ($row[$model->id_field] === $id) {
+                    $model->data = $row;       
+                }
+            }
+            if (empty($model->data)) {
+                $model->data = $model->_table[$this->short_name][1];
+            }
         } else {
             $model->id = null;
         }
@@ -35,19 +42,19 @@ class Controller_Data_Foo extends Controller_Data {
             throw $this->exception('Model is loaded in Controller_Data');
         }
         if ($this->foundOnLoad) {
-            $model->id = 1;
+            $model->id = $model->_table[$this->short_name][1][$model->id_field];
             $model->data = $model->_table[$this->short_name][1];
         } else {
             $model->id = null;
         }
     }
 
-    function tryLoadBy($model,$field,$cond,$value) {
+    function tryLoadBy($model, $field, $cond, $value) {
         if ($model->loaded()) {
             throw $this->exception('Model is loaded in Controller_Data');
         }
         if ($this->foundOnLoad) {
-            $model->id = 1;
+            $model->id = $model->_table[$this->short_name][1][$model->id_field];
             $model->data = $model->_table[$this->short_name][1];
         } else {
             $model->id = null;
@@ -61,13 +68,19 @@ class Controller_Data_Foo extends Controller_Data {
     function prefetchAll($model) {
         $this->rewind += 1;
         reset($model->_table[$this->short_name]);
-        list($model->id,$model->data) = each($model->_table[$this->short_name]);
     }
 
     function loadCurrent($model) {
         $this->next +=1;
-        list($model->id,$model->data) = each($model->_table[$this->short_name]);
+        list($model->id, $model->data) = each($model->_table[$this->short_name]);
+        if ($model->id) {
+            $model->data = $model->get();
+        }
     }
 
-    function deleteAll($model) {}
+    function deleteAll($model) {
+        if ($model->loaded()) {
+            throw $this->exception('Model is loaded in Controller_Data');
+        }
+    }
 }
