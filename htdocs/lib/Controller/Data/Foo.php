@@ -8,7 +8,7 @@ class Controller_Data_Foo extends Controller_Data {
     public $supportLimit = true;
     public $supportOrder = true;
 
-    function save($model, $id) {
+    function save($model, $id, $data) {
         return $id || 1;
     }
 

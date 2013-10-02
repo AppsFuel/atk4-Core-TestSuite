@@ -2,7 +2,7 @@
 
 class Controller_Data_Empty extends Controller_Data {
     
-    function save($model, $id) { }
+    function save($model, $id, $data) { }
 
     function delete($model, $id) { }
 
