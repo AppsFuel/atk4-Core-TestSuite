@@ -65,7 +65,7 @@ class TestCase_ControllerDataArray extends TestCase {
         $row = array('id' => 5, 'parent_id' => 4, 'field' => 'pluto');
 
         $cond = array('parent_id', 'invalidCondition', 3);
-        $this->assertThrowException('BaseException', $this->controller, 'isValid', array($row, $cond));
+        $this->assertThrowException('Exception_DB', $this->controller, 'isValid', array($row, $cond));
     }
 
     function testGetIdsFromConditions() {
@@ -103,6 +103,26 @@ class TestCase_ControllerDataArray extends TestCase {
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(), $ids);
+    }
+
+    function testGetIdsFromConditionsWithLimit() {
+        $conditions = array(
+            'parent_id' => array(array('parent_id', '>', 1))
+        );
+        $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, array(1, 2));
+        $this->assertEquals(array(6, 10), $ids);
+
+        $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, array(0, 2));
+        $this->assertEquals(array(4, 6), $ids);
+
+        $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, array(1, null));
+        $this->assertEquals(array(6), $ids);
+
+        $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, array(null, null));
+        $this->assertEquals(array(4, 6, 10), $ids);
+
+        $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, null);
+        $this->assertEquals(array(4, 6, 10), $ids);
     }
 
     function testSetSourceAssoc() {
@@ -144,7 +164,7 @@ class TestCase_ControllerDataArray extends TestCase {
         $model = $this->add('Model_TestModel');
         $controller = $this->add('Controller_Data_Array');
 
-        $e = $this->assertThrowException('BaseException', $controller, 'setSource', array($model, 'invalidArgument'));
+        $e = $this->assertThrowException('Exception_DB', $controller, 'setSource', array($model, 'invalidArgument'));
         $this->assertEquals('Wrong type: expected array', $e->getMessage());
     }
 
@@ -297,7 +317,7 @@ class TestCase_ControllerDataArray extends TestCase {
         $this->model->id_field = 'parent_id';
         $this->model->setControllerSource($this->rows);
 
-        $e = $this->assertThrowException('BaseException', $this->controller, 'generateNewId', array($this->model));
+        $e = $this->assertThrowException('Exception_DB', $this->controller, 'generateNewId', array($this->model));
         $this->assertEquals('Unknown id type', $e->getMessage());
     }
 
@@ -341,7 +361,7 @@ class TestCase_ControllerDataArray extends TestCase {
         );
         $this->model->set($data);
 
-        $e = $this->assertThrowException('BaseException', $this->controller, 'save', array($this->model, null, $data));
+        $e = $this->assertThrowException('Exception_DB', $this->controller, 'save', array($this->model, null, $data));
         $this->assertEquals('This id is already used. Load the model before', $e->getMessage());
     }
 

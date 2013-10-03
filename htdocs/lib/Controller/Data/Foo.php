@@ -7,6 +7,7 @@ class Controller_Data_Foo extends Controller_Data {
     public $supportConditions = true;
     public $supportLimit = true;
     public $supportOrder = true;
+    public $supportOperators = array('=' => true, '>' => true, '>=' => true, '<=' => true, '<' => true, '!=' => true);
 
     function save($model, $id, $data) {
         return $id || 1;

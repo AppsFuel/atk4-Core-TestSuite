@@ -1129,7 +1129,16 @@ class TestCase_Model extends TestCase {
         $model->setControllerSource(self::$exampleData);
         $model->controller->supportConditions = false;
 
-        $this->assertThrowException('BaseException', $model, 'addCondition', array('field1', 'value1.1'));
+        $this->assertThrowException('Exception_NotImplemented', $model, 'addCondition', array('field1', 'value1.1'));
+    }
+
+    function testAddConditionOperatorUnsupport() {
+        $model = $this->add('Model_TestModel');
+        $model->setControllerSource(self::$exampleData);
+
+        $e = $this->assertThrowException('Exception_NotImplemented', $model, 'addCondition', array('field1', 'unsupportOperator', 'value1.1'));
+        $this->assertEquals('Unsupport operator', $e->getMessage());
+        $this->assertEquals('unsupportOperator', $e->more_info['operator']);
     }
 
     function testSetLimit() {
@@ -1153,7 +1162,7 @@ class TestCase_Model extends TestCase {
         $model->setControllerSource(self::$exampleData);
         $model->controller->supportLimit = false;
 
-        $this->assertThrowException('BaseException', $model, 'setLimit', array(4));
+        $this->assertThrowException('Exception_NotImplemented', $model, 'setLimit', array(4));
     }
 
     function testSetOrder() {
@@ -1177,7 +1186,7 @@ class TestCase_Model extends TestCase {
         $model->setControllerSource(self::$exampleData);
         $model->controller->supportOrder = false;
 
-        $this->assertThrowException('BaseException', $model, 'setOrder', array('field1'));
+        $this->assertThrowException('Exception_NotImplemented', $model, 'setOrder', array('field1'));
     }
 
     function testCount() {
@@ -1200,7 +1209,7 @@ class TestCase_Model extends TestCase {
         $model = $this->add('Model_TestModel');
         $model->setControllerData('Empty');
 
-        $this->assertThrowException('BaseException', $model, 'count');
+        $this->assertThrowException('Exception_NotImplemented', $model, 'count');
     }
 
     function testEachWithString() {
