@@ -6,11 +6,9 @@ class Controller_Data_Empty extends Controller_Data {
 
     function delete($model, $id) { }
 
-    function tryLoad($model, $id) { }
+    function loadById($model, $id) { }
 
-    function tryLoadAny($model) { }
-
-    function tryLoadBy($model, $field, $cond, $value) { }
+    function loadByConditions($model) { }
 
     function prefetchAll($model) { }
 

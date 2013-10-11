@@ -70,36 +70,36 @@ class TestCase_ControllerDataArray extends TestCase {
 
     function testGetIdsFromConditions() {
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1))
+            array('parent_id', '>', 1)
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(4, 6, 10), $ids);
 
 
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1), array('parent_id', '<', 100))
+            array('parent_id', '>', 1), array('parent_id', '<', 100)
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(4, 10), $ids);
 
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1)),
-            'field' => array(array('field', '!=', 'pluto'))
+            array('parent_id', '>', 1),
+            array('field', '!=', 'pluto')
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(6, 10), $ids);
 
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1), array('parent_id', '<', 100)),
-            'field' => array(array('field', '!=', 'pluto'))
+            array('parent_id', '>', 1), array('parent_id', '<', 100),
+            array('field', '!=', 'pluto')
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(10), $ids);
 
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1), array('parent_id', '<', 100)),
-            'field' => array(array('field', '!=', 'pluto')),
-            'id' => array(array('id', '!=', 10)),
+            array('parent_id', '>', 1), array('parent_id', '<', 100),
+            array('field', '!=', 'pluto'),
+            array('id', '!=', 10),
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions);
         $this->assertEquals(array(), $ids);
@@ -107,7 +107,7 @@ class TestCase_ControllerDataArray extends TestCase {
 
     function testGetIdsFromConditionsWithLimit() {
         $conditions = array(
-            'parent_id' => array(array('parent_id', '>', 1))
+            array('parent_id', '>', 1)
         );
         $ids = $this->controller->getIdsFromConditions($this->rows, $conditions, array(1, 2));
         $this->assertEquals(array(6, 10), $ids);
@@ -180,52 +180,36 @@ class TestCase_ControllerDataArray extends TestCase {
         $this->assertFalse(isset($this->model->_table[$this->controller->short_name][999]), 'Deletion fail');
     }
 
-    function testTryLoad() {
-        $this->controller->tryLoad($this->model, 6);
+    function testLoadById() {
+        $this->controller->loadById($this->model, 6);
 
         $this->assertTrue($this->model->loaded(), 'Model must be loaded');
         $this->assertEquals($this->rows[6], $this->model->data);
         $this->assertEquals($this->rows[6], $this->model->get());
     }
 
-    function testTryLoadFail() {
-        $this->controller->tryLoad($this->model, 999);
+    function testLoadByIdFail() {
+        $this->controller->loadById($this->model, 999);
 
         $this->assertFalse($this->model->loaded(), 'Model must be unloaded');
         $this->assertEmpty($this->model->data);
         $this->assertEmpty($this->model->id);
     }
 
-    function testTryLoadBy() {
-        $this->controller->tryLoadBy($this->model, 'id', '>', 1);
-
-        $this->assertTrue($this->model->loaded(), 'Model must be loaded');
-        $this->assertEquals(10, $this->model->id);
-        $this->assertEquals($this->rows[10], $this->model->get());
-    }
-
-    function testTryLoadByFail() {
-        $this->controller->tryLoadBy($this->model, 'id', '>', 1000);
-
-        $this->assertFalse($this->model->loaded(), 'Model must be unloaded');
-        $this->assertEmpty($this->model->id);
-        $this->assertEmpty($this->model->get());
-    }
-
-    function testTryLoadAny() {
+    function testLoadByConditions() {
         $this->model->addCondition('parent_id', '>', 100);
         
-        $this->controller->tryLoadAny($this->model);
+        $this->controller->loadByConditions($this->model);
 
         $this->assertTrue($this->model->loaded(), 'Model must be loaded');
         $this->assertEquals(6, $this->model->id);
         $this->assertEquals($this->rows[6], $this->model->get());
     }
 
-    function testTryLoadAnyFail() {
+    function testLoadByConditionsFail() {
         $this->model->addCondition('parent_id', '>', 1000);
         
-        $this->controller->tryLoadAny($this->model);
+        $this->controller->loadByConditions($this->model);
 
         $this->assertFalse($this->model->loaded(), 'Model must be unloaded');
         $this->assertEmpty($this->model->id);

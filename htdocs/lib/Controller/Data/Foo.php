@@ -19,7 +19,7 @@ class Controller_Data_Foo extends Controller_Data {
         }
     }
 
-    function tryLoad($model, $id) {
+    function loadById($model, $id) {
         if ($model->loaded()) {
             throw $this->exception('Model is loaded in Controller_Data');
         }
@@ -38,19 +38,7 @@ class Controller_Data_Foo extends Controller_Data {
         }
     }
 
-    function tryLoadAny($model) {
-        if ($model->loaded()) {
-            throw $this->exception('Model is loaded in Controller_Data');
-        }
-        if ($this->foundOnLoad) {
-            $model->id = $model->_table[$this->short_name][1][$model->id_field];
-            $model->data = $model->_table[$this->short_name][1];
-        } else {
-            $model->id = null;
-        }
-    }
-
-    function tryLoadBy($model, $field, $cond, $value) {
+    function loadByConditions($model) {
         if ($model->loaded()) {
             throw $this->exception('Model is loaded in Controller_Data');
         }

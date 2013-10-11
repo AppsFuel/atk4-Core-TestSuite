@@ -11,9 +11,9 @@ class TestCase_ControllerDataDumper extends TestCase {
         $controller->save($model, null, array());
         $controller->save($model, 1, array());
 
-        $controller->tryLoad($model, 1);
-        $controller->tryLoadBy($model, 'field1', '=', 'value1.1');
-        $controller->tryLoadAny($model);
+        $controller->loadById($model, 1);
+
+        $controller->loadByConditions($model);
 
         $controller->delete($model, 1);
         $controller->deleteAll($model, 1);
@@ -26,12 +26,10 @@ class TestCase_ControllerDataDumper extends TestCase {
             "controller_data_array::save return 524d6c04cd8db",
             "controller_data_array::save with (Model_TestModel model_testmodel, 1, Array)",
             "controller_data_array::save return ",
-            "controller_data_array::tryLoad with (Model_TestModel model_testmodel, 1)",
-            "controller_data_array::tryLoad return ",
-            "controller_data_array::tryLoadBy with (Model_TestModel model_testmodel, field1, =, value1.1)",
-            "controller_data_array::tryLoadBy return ",
-            "controller_data_array::tryLoadAny with (Model_TestModel model_testmodel)",
-            "controller_data_array::tryLoadAny return ",
+            "controller_data_array::loadById with (Model_TestModel model_testmodel, 1)",
+            "controller_data_array::loadById return ",
+            "controller_data_array::loadByConditions with (Model_TestModel model_testmodel)",
+            "controller_data_array::loadByConditions return ",
             "controller_data_array::delete with (Model_TestModel model_testmodel, 1)",
             "controller_data_array::delete return ",
             "controller_data_array::deleteAll with (Model_TestModel model_testmodel)",

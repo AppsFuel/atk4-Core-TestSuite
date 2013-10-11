@@ -114,8 +114,10 @@ class TestCase_Model extends TestCase {
     function testGetCalculated() {
         $model = $this->add('Model_TestModel');
         $model->setControllerSource(self::$exampleData);
-        $expr = $model->addExpression('concatenate', 'Field_Concatenate');
-        $expr->separator = ' ';
+        $expr = $model->addExpression('concatenate', 
+                function($model, $data) {
+                    return $data['field1'] . ' ' . $data['field2'];
+                });
 
         $model->loadAny();
 
@@ -131,8 +133,10 @@ class TestCase_Model extends TestCase {
     function testGetOnlyCalculated() {
         $model = $this->add('Model_TestModel');
         $model->setControllerSource(self::$exampleData);
-        $expr = $model->addExpression('concatenate', 'Field_Concatenate');
-        $expr->separator = ' ';
+        $expr = $model->addExpression('concatenate', 
+                function($model, $data) {
+                    return $data['field1'] . ' ' . $data['field2'];
+                });
 
         $model->loadAny();
 
@@ -1096,9 +1100,9 @@ class TestCase_Model extends TestCase {
 
         $model->addCondition('field1', 'value1.1');
 
-        $this->assertTrue(isset($model->conditions['field1']), 'Model doesn\'t store condition');
-        $this->assertEquals(1, count($model->conditions['field1']));
-        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions['field1'][0]);
+        $this->assertTrue(isset($model->conditions[0]), 'Model doesn\'t store condition');
+        $this->assertEquals(1, count($model->conditions));
+        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions[0]);
     }
 
     function testAddConditionArray() {
@@ -1109,10 +1113,10 @@ class TestCase_Model extends TestCase {
             array('field1', 'value1.1'),
             array('field1', '>', 'value2.1')));
 
-        $this->assertTrue(isset($model->conditions['field1']), 'Model doesn\'t store condition');
-        $this->assertEquals(2, count($model->conditions['field1']));
-        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions['field1'][0]);
-        $this->assertEquals(array('field1', '>', 'value2.1'), $model->conditions['field1'][1]);
+        $this->assertTrue(isset($model->conditions[0][1]), 'Model doesn\'t store condition');
+        $this->assertEquals(2, count($model->conditions));
+        $this->assertEquals(array('field1', '=', 'value1.1'), $model->conditions[0]);
+        $this->assertEquals(array('field1', '>', 'value2.1'), $model->conditions[1]);
     }
 
     function testAddConditionOnlyKey() {
@@ -1290,9 +1294,7 @@ class TestCase_Model extends TestCase {
 
         $this->assertTrue($referencedModel instanceof Model_TestModel, 'Return a wrong model type');
         $expected = array(
-            'field1' => array(
-                array('field1', '=', null)
-            )
+            array('field1', '=', null)
         );
         $this->assertEquals($expected, $referencedModel->conditions);
     }
@@ -1307,9 +1309,8 @@ class TestCase_Model extends TestCase {
 
         $this->assertTrue($referencedModel instanceof Model_TestModel, 'Return a wrong model type');
         $expected = array(
-            'field1' => array(
                 array('field1', '=', $model->get('field2'))
-        ));
+        );
         $this->assertEquals($expected, $referencedModel->conditions);
     }
 
@@ -1343,7 +1344,7 @@ class TestCase_Model extends TestCase {
 
         $field = $model->hasOne('Model_TestModel', 'field4');
 
-        $this->assertTrue($model->getElement('field4') instanceof Field, 'Model doesn\'t create new field');
+        $this->assertTrue($model->getElement('field4') instanceof Field_Base, 'Model doesn\'t create new field');
         $this->assertTrue(is_string($field->getModel()), 'Model field hasn\'t model');
     }
 
@@ -1506,7 +1507,7 @@ class TestCase_Model extends TestCase {
         $childModel->loadAny();
         $this->assertEquals(2, $childModel->id);
         $expected = array(
-            'parent_id' => array(array('parent_id', '=', $gFatherModel->id))
+            array('parent_id', '=', $gFatherModel->id)
         );
         $this->assertEquals($expected, $childModel->conditions);
 
