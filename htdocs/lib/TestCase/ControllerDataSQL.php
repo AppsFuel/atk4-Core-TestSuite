@@ -241,31 +241,26 @@ class TestCase_ControllerDataSQL extends TestCase {
 
     function testModify() {
         $model = $this->add('Model_Customer');
-        $controller = $model->controller;
         $model->load(1);
-        $model->addCondition('name', 'Peter');
         $data = $model->get();
         $model->set('password', 'aaaa');
         
-        $controller->save($model, $model->id, $model->data);
+        $model->save();
 
         $data['password'] = 'aaaa';
         $this->assertTrue($model->loaded(), 'Model must be loaded');
-        $this->assertEquals($data, $model->get());
         $model = $this->add('Model_Customer');
         $this->assertEquals($data, $model->load(1)->get());
     }
 
     function testModifyWithId() {
         $model = $this->add('Model_Customer');
-        $controller = $model->controller;
         $model->load(1);
-        $model->addCondition('name', 'Peter');
         $data = $model->get();
         $model->set('password', 'aaaa')
             ->set('id', 3);
         
-        $controller->save($model, $model->id, $model->data);
+        $model->save();
 
         $data['password'] = 'aaaa';
         $data['id'] = '3';
@@ -275,40 +270,74 @@ class TestCase_ControllerDataSQL extends TestCase {
         $this->assertEquals($data, $model->load(3)->get());
     }
 
+    function testModifyWithConditions() {
+        $model = $this->add('Model_Customer');
+        $model->load(1);
+        $model->addCondition('id', '=', 2);
+        $data = $model->get();
+        $model->set('password', 'aaaa')
+            ->set('id', 3);
+        
+        $e = $this->assertThrowException('BaseException', $model, 'save');
+        $this->assertEquals('Record with specified id was not found', $e->getMessage());
+
+        $this->assertFalse($model->loaded(), 'Model must be unloaded');
+        $model = $this->add('Model_Customer');
+        $this->assertEquals($data, $model->load(1)->get());
+    }
+
     function testInsert() {
         $model = $this->add('Model_Customer');
-        $controller = $model->controller;
         $data = array(
-            'password' => 'aaaa',
             'name' => 'newEntry',
             'email' => 'newEmail',
+            'password' => 'aaaa',
         );
         $model->set($data);
         
-        $id = $controller->save($model, $model->id, $model->data);
+        $model->save();
 
-        $this->assertNotEmpty($id);
-        $this->assertFalse($model->loaded(), 'Model must be not loaded');
-        $this->assertEquals($data, $model->get());
+        $data['id'] = $model->id;
+        $this->assertNotEmpty($model->id);
+        $this->assertTrue($model->loaded(), 'Model must be loaded');
+        $this->assertSame($data, $model->get());
     }
 
     function testInsertWithId() {
         $model = $this->add('Model_Customer');
-        $controller = $model->controller;
         $data = array(
-            'id' => 3,
-            'password' => 'aaaa',
+            'id' => '3',
             'name' => 'newEntry',
             'email' => 'newEmail',
+            'password' => 'aaaa',
         );
         $model->set($data);
-        
-        $id = $controller->save($model, $model->id, $model->data);
 
+        $model->save();
+
+        $id = $model->id;
         $this->assertNotEmpty($id);
         $this->assertEquals('3', $id);
-        $this->assertFalse($model->loaded(), 'Model must be not loaded');
+        $this->assertTrue($model->loaded(), 'Model must be loaded');
         $this->assertEquals($data, $model->get());
+    }
+
+    function testInsertWithConditions() {
+        $model = $this->add('Model_Customer');
+        $model->addCondition('password', '!=', 'aaaa');
+        $data = array(
+            'id' => '3',
+            'name' => 'newEntry',
+            'email' => 'newEmail',
+            'password' => 'aaaa',
+        );
+        $model->set($data);
+
+        $e = $this->assertThrowException('BaseException', $model, 'save');
+
+        $this->assertEquals('Record with specified id was not found', $e->getMessage());
+        $this->assertFalse($model->loaded(), 'Model must be not loaded');
+        $this->assertFalse($this->add('Model_Customer')->tryLoad(3)->loaded(), 'Model must be not loaded');
     }
 
     function testInsertWithJoin() {
