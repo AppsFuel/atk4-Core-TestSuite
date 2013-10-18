@@ -12,6 +12,7 @@ class Model_Rental extends Model_Relation {
             ->type('int');
         $this->addField('is_returned')
             ->type('boolean');
+        $this->addField('dvd_id');
 
         $this->hasOne('Customer', 'customer_id');
     }

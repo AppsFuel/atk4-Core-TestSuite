@@ -119,6 +119,7 @@ class TestCase_ControllerDataSQL extends TestCase {
         $expected = array(
             'id' => '1',
             'is_returned' => 'N',
+            'dvd_id' => '1',
             'customer_id' => '1',
             'customer' => 'John Smith',
         );
@@ -134,12 +135,14 @@ class TestCase_ControllerDataSQL extends TestCase {
             array(
                 'id' => "1",
                 'is_returned' => "N",
+                'dvd_id' => '1',
                 'customer_id' => "1",
                 'customer' => "John Smith",
             ),
             array(
                 'id' => "2",
                 'is_returned' => "Y",
+                'dvd_id' => '2',
                 'customer_id' => "1",
                 'customer' => "John Smith",
             )
@@ -190,11 +193,12 @@ class TestCase_ControllerDataSQL extends TestCase {
         $data = $model->get();
         $this->assertEquals('1', $data['id']);
         $this->assertEquals('N', $data['is_returned']);
+        $this->assertEquals('1', $data['dvd_id']);
         $this->assertEquals('1', $data['customer_id']);
         $this->assertEquals('John Smith', $data['customer']);
         $this->assertEquals('John Smith', $data['name']);
         $this->assertEquals('demo', $data['email']);
-        $this->assertEquals(6, count($data));
+        $this->assertEquals(7, count($data));
     }
 
     function skiptestReverseJoin() {
@@ -362,6 +366,7 @@ class TestCase_ControllerDataSQL extends TestCase {
         $expected = array(
             'id' => $id,
             'is_returned' => 'N',
+            'dvd_id' => null,
             'customer_id' => $customerId,
             'customer' => 'Paperino',
         );
@@ -403,6 +408,7 @@ class TestCase_ControllerDataSQL extends TestCase {
         $expected = array(
             'id' => $id,
             'is_returned' => 'Y',
+            'dvd_id' => '1',
             'customer_id' => $customerId,
             'customer' => 'Paperino',
         );
@@ -481,5 +487,95 @@ class TestCase_ControllerDataSQL extends TestCase {
         $model->tryLoad($customerId);
         $this->assertFalse($model->loaded(), 'Model must be unloaded');
         $model->loadAny(); // check where comndition 
+    }
+
+    function testJoinHasOne() {
+        $model = $this->add('Model_Rental');
+        $dvdTable = $model->join('dvd', 'dvd_id', 'left', 'DVD');
+        $dvdTable->addField('code');
+        $dvdTable->hasOne('Movie', 'movie_id');
+
+        $model->loadAny();
+
+        $expected = array(
+            'id' => '1',
+            'is_returned' => 'N',
+            'dvd_id' => '1',
+            'customer_id' => '1',
+            'customer' => 'John Smith',
+            'code' => '20397728',
+            'movie_id' => '2',
+            'movie' => 'The Matrix',
+        );
+        $this->assertTrue($model->loaded(), 'Model must be loaded');
+        $this->assertEquals($expected, $model->get());
+    }
+
+    function testJoinHasOneRef() {
+        $model = $this->add('Model_Rental');
+        $dvdTable = $model->join('dvd', 'dvd_id', 'left', 'DVD');
+        $dvdTable->addField('code');
+        $dvdTable->hasOne('Movie', 'movie_id');
+
+        $model->loadAny();
+        $movieModel = $model->ref('movie_id');
+
+        $expected = array(
+            'id' => '2',
+            'name' => 'The Matrix',
+            'year' => '1999',
+            'imdb' => 'http://www.imdb.com/title/tt0133093/'
+        );
+        $this->assertEquals($expected, $movieModel->get());
+    }
+
+    function testJoinHasMany() {
+        $model = $this->add('Model_Rental');
+        $dvdTable = $model->join('dvd', 'dvd_id', 'left', 'DVD');
+        $dvdTable->addField('code');
+
+        $dvdTable->hasMany('Rental', 'dvd_id', 'id', 'reference_name');
+
+        $model->loadAny();
+
+        $rental = $model->ref('reference_name');
+
+        $rows = $rental->getRows();
+        $this->assertEquals(1, count($rows));
+        $expected = array(
+            'id' => '1',
+            'is_returned' => 'N',
+            'dvd_id' => '1',
+            'customer_id' => '1',
+            'customer' => 'John Smith',
+        );
+        $this->assertEquals($expected, $rows[0]);
+
+        $conditions = $rental->conditions;
+        $this->assertEquals(1, count($conditions));
+        $expected = array('dvd_id', '=', '1');
+        $this->assertEquals($expected, $conditions[0]);
+    }
+
+
+    function testDeleteJoinIgnore() {
+        $model = $this->add('Model_Rental');
+        $customerTable = $model->join('customer', 'customer_id', 'left', 'Customer', null, 'ignore');
+        $customerTable->addField('name');
+        $customerTable->addField('email');
+        $customerTable->addField('password');
+        $model->load(1);
+        $customerId = $model->get('customer_id');
+
+        $model->delete();
+
+        $model = $this->add('Model_Rental');
+        $model->tryLoad(1);
+        $this->assertFalse($model->loaded(), 'Model rental must be unloaded');
+        $model->loadAny(); // check where comndition 
+
+        $model = $this->add('Model_Customer');
+        $model->tryLoad($customerId);
+        $this->assertTrue($model->loaded(), 'Model customer must be unloaded');
     }
 }
